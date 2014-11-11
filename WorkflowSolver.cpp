@@ -20,6 +20,8 @@ namespace po = boost::program_options;
 
 po::variables_map config;
 
+bool debug = false;
+
 bool parseCommandLine(int argc, char ** argv) {
   po::options_description desc("Options"); 
   desc.add_options() 
@@ -27,7 +29,7 @@ bool parseCommandLine(int argc, char ** argv) {
        ("treefile", po::value<string>()->required(), "Tree file") 
        ("json", po::value<string>(), "Output workflow JSON")
        ("dot", po::value<string>(), "Output DOT file")
-       ("debug,d", "Debug mode (verbose)")
+       ("debug,d", po::bool_switch(&debug)->default_value(false), "Debug mode (verbose)")
   ;
    
   try {
@@ -80,7 +82,7 @@ int main(int argc, char ** argv)
   
   cerr << "Analysis done.\n";
   
-  if(config.count("debug")) {
+  if(debug) {
     Analysis::printTree(m->getRootNode());
 
     for (Element *e : m->getElements()) {

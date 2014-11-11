@@ -25,6 +25,7 @@ public:
   vector<Signal*> ins;
   vector<Signal*> outs;
   const string command;
+  string args;
   
   Process(string command): command(command) {};
 };
@@ -32,7 +33,7 @@ public:
 class Workflow {
 public:
   vector<Process> processes;
-  map<string, Signal>  signals;
+  map<string, Signal> signals;
   
   string json();
   string dot();

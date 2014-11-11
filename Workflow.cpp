@@ -27,8 +27,18 @@ string Workflow::json() {
   pt.add_child("signals",   signals);
 
   for(auto& p: this->processes) {
-    ptree process, ins, outs;
-    process.put("command", p.command);
+    ptree process, ins, outs, config, executor;
+    process.put("name", p.command);
+    process.put("function", "amqpCommand");
+    process.put("type", "dataflow");
+    process.put("executor", "syscommand");
+    
+    executor.put("executable", p.command);
+    executor.put("args", p.args);    
+    
+    config.add_child("executor", executor);
+    process.add_child("config", config);
+    
     for(auto s: p.ins) {
       ptree el;
       el.put_value(s->id);
@@ -105,18 +115,22 @@ void workflowElimination(Workflow* w, Node *node)
   }
   
   Process p(str(format("Eliminate %d") % node->getElements().size()));
+  std::ostringstream args; 
   if(isLeaf) {
     Signal * elementMatrix = w->signal(str(format("%05d_element.bin") % node->getId()));
     p.ins.push_back(elementMatrix);
+    args << format("--element %s ") % elementMatrix->name;
   } else {
     Signal * leftMatrix = w->signal(str(format("%05d_schur.bin") % node->getLeft()->getId()));
     Signal * rightMatrix = w->signal(str(format("%05d_schur.bin") % node->getRight()->getId()));
     p.ins.push_back(leftMatrix);
     p.ins.push_back(rightMatrix);    
+    args << format("--left %s --right %s ") % leftMatrix->name % rightMatrix->name;
   }
   Signal * eliminatedMatrix = w->signal(str(format("%05d_schur.bin"  ) % node->getId()));
   p.outs.push_back(eliminatedMatrix);            
-  
+  args << str(format("--out %s") % eliminatedMatrix->name);
+  p.args = args.str();
   w->processes.push_back(p);  
 }
 
@@ -130,7 +144,7 @@ void workflowBackwardSubstitution(Workflow* w, Node *node)
   
     Signal * nodeMatrix = w->signal(str(format("%05d_bs.bin") % node->getId()));
     p.outs.push_back(nodeMatrix);
-
+    p.args = str(format("--parent %s --matrix %s") % parentMatrix->name % nodeMatrix->name);
     w->processes.push_back(p);      
   }
   if (node->getLeft() != NULL && node->getRight() != NULL) {
