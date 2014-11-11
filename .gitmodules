@@ -1,6 +1,3 @@
 [submodule "graph_grammar_solver"]
 	path = graph_grammar_solver
 	url = https://github.com/kjopek/graph_grammar_solver.git
-[submodule "docopt"]
-	path = docopt
-	url = https://github.com/docopt/docopt.cpp.git

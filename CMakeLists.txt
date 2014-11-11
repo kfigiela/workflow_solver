@@ -11,5 +11,5 @@ link_directories(graph_grammar_solver/build)
 
 
 add_executable(WorkflowSolver WorkflowSolver.cpp Workflow.cpp)
-target_link_libraries(WorkflowSolver -ldl -lpthread -lcblas -llapack -lsatlas -ltatlas -lcurses -lSolverLib )
+target_link_libraries(WorkflowSolver -ldl -lpthread -lcblas -llapack -lsatlas -ltatlas -lcurses -lSolverLib -lboost_program_options)
 include_directories("/usr/local/opt/llvm/include")

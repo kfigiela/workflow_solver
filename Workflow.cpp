@@ -8,21 +8,6 @@
 
 using namespace std;
 using boost::format;
-// typedef map<Node*, int> nodeMap
-//
-// nodeMap buildNodeMap(Node* root) {
-//   nodeMap map;
-//   buildNodeMap(map, root);
-//   return map;
-// }
-//
-// void buildNodeMap(nodeMap map, Node* node) {
-//   if (node->getLeft() != NULL && node->getRight() != NULL) {
-//       buildNodeMap(map, node->getLeft());
-//       buildNodeMap(map, node->getRight());
-//   }
-//   map[node] = map.size();
-// }
 
 string Workflow::json() {
   using boost::property_tree::ptree;
@@ -32,14 +17,13 @@ string Workflow::json() {
   ptree signals;
   ptree processes;
 
-      
   for(auto& s: this->signals) {
     ptree signal;
     signal.put("name", s.second.name);
     signal.put("id", s.second.id);
     signals.push_back(std::make_pair("", signal));
-    // format("%3d: %s\n") % s.second.id % s.second.name << endl;
   }
+  
   pt.add_child("signals",   signals);
 
   for(auto& p: this->processes) {

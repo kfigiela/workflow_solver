@@ -8,38 +8,61 @@
 #include "Workflow.hpp"
 
 #include <boost/format.hpp>
-// #include <llvm/Support/CommandLine.h>
+#include <boost/program_options.hpp>
 #include <sys/time.h>
 #include <iostream>
+#include <fstream>
 
-// #ifdef BOOST_NO_EXCEPTIONS
-// namespace boost {
-//   void throw_exception( std::exception const & e ) { std::cerr << "EXCEPTION!!\n"; }
-// }
-// #endif
-
-
-// const char* const name = "WorkflowSolver";
-// const char* const desc = "Workflow interface for mesh-based FEM solver";
-// const char* const url = NULL;
-//
-// namespace cl = llvm::cl;
-//
-// static cl::opt<std::string> treefile("treefile", cl::desc("File with tree definition"), cl::value_desc("filename"), cl::Required);
-
-
-using std::cout; using std::cerr;
-using std::string;
-using std::endl; using std::flush;
-
+using namespace std;
 using boost::format;
 using boost::io::group;
+namespace po = boost::program_options; 
+
+po::variables_map config;
+
+bool parseCommandLine(int argc, char ** argv) {
+  po::options_description desc("Options"); 
+  desc.add_options() 
+       ("help,h", "Print help messages") 
+       ("treefile", po::value<string>()->required(), "Tree file") 
+       ("json", po::value<string>(), "Output workflow JSON")
+       ("dot", po::value<string>(), "Output DOT file")
+       ("debug,d", "Debug mode (verbose)")
+  ;
+   
+  try {
+    po::store(po::parse_command_line(argc, argv, desc), config);
+  
+    if (config.count("help")) {
+        cout << desc << endl;
+        return false;
+    }
+    po::notify(config);  
+  } catch (boost::program_options::required_option e) {
+    cerr << "Error: " << e.what() << endl << endl;
+    cerr << desc << endl;
+    return false;
+  }
+  return true;
+}
+
+void writeFile(string name, string content) {
+  try {
+    ofstream f(name);
+    f.exceptions ( ifstream::eofbit | ifstream::failbit | ifstream::badbit );    
+    f << content;
+    f.close();    
+  } catch (std::exception e) {
+    cerr << format("Failed writing %s: %s") % name % e.what() << endl;    
+  }
+}
 
 int main(int argc, char ** argv)
-{
-  // cl::ParseCommandLineOptions(argc, argv);
+{  
+  if(!parseCommandLine(argc, argv)) 
+    return 1;
   
-  string treefile = argv[1];
+  string treefile = config["treefile"].as<string>();
   
   cerr << format("Mesh file: %s\n") % treefile;
   
@@ -57,7 +80,7 @@ int main(int argc, char ** argv)
   
   cerr << "Analysis done.\n";
   
-  if(0) {
+  if(config.count("debug")) {
     Analysis::printTree(m->getRootNode());
 
     for (Element *e : m->getElements()) {
@@ -66,13 +89,21 @@ int main(int argc, char ** argv)
     cerr << format("Root size: %d\n") % m->getRootNode()->getDofs().size();
   }
   
-  cerr << "Generating graph...\n";
+  cerr << "Generating workflow graph..." << endl;
   
   Workflow * w = buildWorkflow(m->getRootNode());
-  // cout << w->json();
-  // cout << endl << endl << endl;
-  cout << w->dot();
   
+  if(config.count("json")) {
+    cerr << "Writing JSON..." << endl;
+    writeFile(config["json"].as<string>(), w->json());
+  }
+
+  if(config.count("dot")) {
+    cerr << "Writing DOT..." << endl;
+    writeFile(config["dot"].as<string>(), w->dot());
+  }
+        
+  cerr << "Done." << endl;
   
   return 0;
 }
