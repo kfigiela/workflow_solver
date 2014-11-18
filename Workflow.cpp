@@ -12,7 +12,7 @@
 using namespace std;
 using boost::format;
 
-string Workflow::json() {
+string Workflow::json(string common_args) {
   using boost::property_tree::ptree;
   using boost::property_tree::write_json;
   
@@ -37,7 +37,7 @@ string Workflow::json() {
     process.put("executor", "syscommand");
     
     executor.put("executable", p.command);
-    executor.put("args", p.args);    
+    executor.put("args", common_args + p.args);    
     
     config.add_child("executor", executor);
     process.add_child("config", config);
@@ -119,38 +119,43 @@ void workflowElimination(Workflow* w, Node *node)
   }
   
   Process p(str(format("Eliminate %d") % node->getElements().size()));
-  std::ostringstream args; 
   if(isLeaf) {
-    Signal * elementMatrix = w->signal(str(format("%05d_element.bin") % node->getId()));
+    Signal * elementMatrix = w->signal(str(format("%05d_element") % node->getId()));
     p.ins.push_back(elementMatrix);
-    args << format("--element %s ") % elementMatrix->name;
   } else {
-    Signal * leftMatrix = w->signal(str(format("%05d_schur.bin") % node->getLeft()->getId()));
-    Signal * rightMatrix = w->signal(str(format("%05d_schur.bin") % node->getRight()->getId()));
+    Signal * leftMatrix = w->signal(str(format("%05d_schur") % node->getLeft()->getId()));
+    Signal * rightMatrix = w->signal(str(format("%05d_schur") % node->getRight()->getId()));
     p.ins.push_back(leftMatrix);
     p.ins.push_back(rightMatrix);    
-    args << format("--left %s --right %s ") % leftMatrix->name % rightMatrix->name;
   }
-  Signal * eliminatedMatrix = w->signal(str(format("%05d_schur.bin"  ) % node->getId()));
+
+  Signal * eliminatedMatrix = w->signal(str(format("%05d_schur"  ) % node->getId()));
   p.outs.push_back(eliminatedMatrix);            
-  args << str(format("--out %s") % eliminatedMatrix->name);
-  p.args = args.str();
+
+  p.args = str(format("--node %d ") % node->getId());
   w->processes.push_back(p);  
 }
 
 void workflowBackwardSubstitution(Workflow* w, Node *node)
 {
-  if(node->getParent() != NULL) {
-    Process p("BS");
-    
-    Signal * parentMatrix = w->signal(str(format("%05d_%s.bin") % node->getParent()->getId() % (node->getParent()->getParent() == NULL?"schur":"bs")));
-    p.ins.push_back(parentMatrix);
+  Process p("BS");
   
-    Signal * nodeMatrix = w->signal(str(format("%05d_bs.bin") % node->getId()));
-    p.outs.push_back(nodeMatrix);
-    p.args = str(format("--parent %s --matrix %s") % parentMatrix->name % nodeMatrix->name);
-    w->processes.push_back(p);      
+  Signal * nodeMatrix = w->signal(str(format("%05d_%s") % node->getId() % (node->getParent() == NULL?"schur":"bs")));
+  p.ins.push_back(nodeMatrix);
+
+  if (node->getLeft() != NULL && node->getRight() != NULL) {
+    Signal * leftMatrix = w->signal(str(format("%05d_bs") % node->getLeft()->getId()));
+    p.outs.push_back(leftMatrix);
+
+    Signal * rightMatrix = w->signal(str(format("%05d_bs") % node->getRight()->getId()));
+    p.outs.push_back(rightMatrix);
+  } else {    
+    Signal * solutionMatrix = w->signal(str(format("%05d_sol") % node->getId()));
+    p.outs.push_back(solutionMatrix);
   }
+  p.args = str(format("--node %d") % node->getId());
+  w->processes.push_back(p);      
+  
   if (node->getLeft() != NULL && node->getRight() != NULL) {
     workflowBackwardSubstitution(w, node->getLeft());
     workflowBackwardSubstitution(w, node->getRight());

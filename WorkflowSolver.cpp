@@ -98,7 +98,7 @@ int main(int argc, char ** argv)
   
   if(config.count("json")) {
     cout << "Writing JSON...\n";
-    writeFile(config["json"].as<string>(), w->json());
+    writeFile(config["json"].as<string>(), w->json(str(format("--tree \"%s\" ") % config["tree"].as<string>())));
   }
 
   if(config.count("dot")) {

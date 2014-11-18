@@ -35,7 +35,7 @@ public:
   vector<Process> processes;
   map<string, Signal> signals;
   
-  string json();
+  string json(string common_args = "");
   string dot();
   Signal * signal(string name);  
 };
