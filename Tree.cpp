@@ -11,3 +11,4 @@ void Tree::traverseTree(Node * node) {
   if(node->getRight()) 
     traverseTree(node->getRight());      
 }
+
