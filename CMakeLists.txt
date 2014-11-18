@@ -16,3 +16,6 @@ target_link_libraries(WorkflowSolver -ldl -lpthread -lcblas -llapack -lsatlas -l
 add_executable(Eliminate Eliminate.cpp Workflow.cpp Tree.cpp)
 target_link_libraries(Eliminate -ldl -lpthread -lcblas -llapack -lsatlas -ltatlas -lcurses -lSolverLib -lboost_program_options -lboost_serialization)
 
+add_executable(Backsubstitute Backsubstitute.cpp Workflow.cpp Tree.cpp)
+target_link_libraries(Backsubstitute -ldl -lpthread -lcblas -llapack -lsatlas -ltatlas -lcurses -lSolverLib -lboost_program_options -lboost_serialization)
+

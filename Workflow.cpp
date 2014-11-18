@@ -19,6 +19,8 @@ string Workflow::json(string common_args) {
   ptree pt;
   ptree signals;
   ptree processes;
+  ptree ins;
+  ptree outs;
 
   for(auto& s: this->signals) {
     ptree signal;
@@ -32,7 +34,7 @@ string Workflow::json(string common_args) {
   for(auto& p: this->processes) {
     ptree process, ins, outs, config, executor;
     process.put("name", p.command);
-    process.put("function", "amqpCommand");
+    process.put("function", "command");
     process.put("type", "dataflow");
     process.put("executor", "syscommand");
     
@@ -59,6 +61,21 @@ string Workflow::json(string common_args) {
     processes.push_back(std::make_pair("", process));
   }
   pt.add_child("processes", processes);
+  
+  
+  for(auto s: this->ins) {
+    ptree el;
+    el.put_value(s->id);
+    ins.push_back(std::make_pair("", el));
+  }  
+  pt.add_child("ins", ins);
+  
+  for(auto s: this->outs) {
+    ptree el;
+    el.put_value(s->id);
+    outs.push_back(std::make_pair("", el));
+  }
+  pt.add_child("outs", outs);
   
   std::ostringstream buf; 
   write_json (buf, pt, true);
@@ -118,10 +135,11 @@ void workflowElimination(Workflow* w, Node *node)
       workflowElimination(w, node->getRight());
   }
   
-  Process p(str(format("Eliminate %d") % node->getElements().size()));
+  Process p("Eliminate");
   if(isLeaf) {
     Signal * elementMatrix = w->signal(str(format("%05d_element") % node->getId()));
     p.ins.push_back(elementMatrix);
+    w->ins.push_back(elementMatrix);
   } else {
     Signal * leftMatrix = w->signal(str(format("%05d_schur") % node->getLeft()->getId()));
     Signal * rightMatrix = w->signal(str(format("%05d_schur") % node->getRight()->getId()));
@@ -138,21 +156,25 @@ void workflowElimination(Workflow* w, Node *node)
 
 void workflowBackwardSubstitution(Workflow* w, Node *node)
 {
-  Process p("BS");
+  bool isLeaf = (node->getLeft() == NULL || node->getRight() == NULL);
+  
+  Process p("Backsubstitute");
   
   Signal * nodeMatrix = w->signal(str(format("%05d_%s") % node->getId() % (node->getParent() == NULL?"schur":"bs")));
   p.ins.push_back(nodeMatrix);
 
-  if (node->getLeft() != NULL && node->getRight() != NULL) {
+  if (isLeaf) {
+    Signal * solutionMatrix = w->signal(str(format("%05d_sol") % node->getId()));
+    p.outs.push_back(solutionMatrix);
+    w->outs.push_back(solutionMatrix);
+  } else {
     Signal * leftMatrix = w->signal(str(format("%05d_bs") % node->getLeft()->getId()));
     p.outs.push_back(leftMatrix);
 
     Signal * rightMatrix = w->signal(str(format("%05d_bs") % node->getRight()->getId()));
     p.outs.push_back(rightMatrix);
-  } else {    
-    Signal * solutionMatrix = w->signal(str(format("%05d_sol") % node->getId()));
-    p.outs.push_back(solutionMatrix);
-  }
+  } 
+  
   p.args = str(format("--node %d") % node->getId());
   w->processes.push_back(p);      
   

@@ -62,21 +62,23 @@ int main(int argc, char ** argv)
   
   node = tree.nodes.at(node_id);
 
-  node->allocateSystem(OLD);
+  KV::read_matrix(node);
     
   if(node->getLeft() != NULL && node->getRight() != NULL) { 
     KV::read_matrix(node->getLeft());
     KV::read_matrix(node->getRight());
-  } else {
-    // TODO: should actually read element matrix here, for now eliminate generates mock data for leaves
-    // kv_read_matrix(node);
-  }
+  } 
   
-  cout << format("Eliminaing node: %d... \n") % node->getId();
+  cout << format("Backward substitution on node: %d... \n") % node->getId();
 
-  node->eliminate();
+  node->bs();
   
-  KV::write_matrix(node);
+  if(node->getLeft() != NULL && node->getRight() != NULL) { 
+    KV::write_matrix(node->getLeft());
+    KV::write_matrix(node->getRight());
+  } else {
+    KV::write_matrix(node); // TODO: is it needed?
+  }
         
   cout << "Finished!\n";
   

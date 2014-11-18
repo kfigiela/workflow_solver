@@ -34,6 +34,9 @@ class Workflow {
 public:
   vector<Process> processes;
   map<string, Signal> signals;
+
+  vector<Signal*> ins;
+  vector<Signal*> outs;  
   
   string json(string common_args = "");
   string dot();
