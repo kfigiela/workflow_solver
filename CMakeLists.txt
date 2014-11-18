@@ -10,6 +10,6 @@ link_directories(/opt/local/lib/) # For Atlas installed via OS X MacPorts
 link_directories(graph_grammar_solver/build)
 
 
-add_executable(WorkflowSolver WorkflowSolver.cpp Workflow.cpp)
-target_link_libraries(WorkflowSolver -ldl -lpthread -lcblas -llapack -lsatlas -ltatlas -lcurses -lSolverLib -lboost_program_options)
+add_executable(WorkflowSolver WorkflowSolver.cpp Workflow.cpp Tree.cpp)
+target_link_libraries(WorkflowSolver -ldl -lpthread -lcblas -llapack -lsatlas -ltatlas -lcurses -lSolverLib -lboost_program_options -lboost_serialization)
 include_directories("/usr/local/opt/llvm/include")

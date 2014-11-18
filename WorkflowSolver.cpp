@@ -6,6 +6,7 @@
 #include "graph_grammar_solver/EquationSystem.hpp"
 
 #include "Workflow.hpp"
+#include "Tree.hpp"
 
 #include <boost/format.hpp>
 #include <boost/program_options.hpp>
@@ -29,6 +30,7 @@ bool parseCommandLine(int argc, char ** argv) {
        ("treefile", po::value<string>()->required(), "Tree file") 
        ("json", po::value<string>(), "Output workflow JSON")
        ("dot", po::value<string>(), "Output DOT file")
+       ("tree", po::value<string>()->required(), "Output serialized tree")
        ("debug,d", po::bool_switch(&debug)->default_value(false), "Debug mode (verbose)")
   ;
    
@@ -41,8 +43,8 @@ bool parseCommandLine(int argc, char ** argv) {
     }
     po::notify(config);  
   } catch (boost::program_options::required_option e) {
-    cerr << "Error: " << e.what() << endl << endl;
-    cerr << desc << endl;
+    cout << "Error: " << e.what() << endl << endl;
+    cout << desc << endl;
     return false;
   }
   return true;
@@ -55,7 +57,7 @@ void writeFile(string name, string content) {
     f << content;
     f.close();    
   } catch (std::exception e) {
-    cerr << format("Failed writing %s: %s") % name % e.what() << endl;    
+    cout << format("Failed writing %s: %s") % name % e.what() << endl;    
   }
 }
 
@@ -66,21 +68,19 @@ int main(int argc, char ** argv)
   
   string treefile = config["treefile"].as<string>();
   
-  cerr << format("Mesh file: %s\n") % treefile;
+  cout << format("Reading mesh file: %s... \n") % treefile;
   
   Mesh *m  = Mesh::loadFromFile(treefile.c_str());
   if (m == NULL) {
-      cerr << "Could not load the mesh. Exiting.\n";
-      exit(1);
+    cout << "Failed. Could not load the mesh. Exiting.\n";
+    exit(1);
   }
   
-  Analysis::enumerateDOF(m);
+  cout << "DOF enumeration... \n";
+  Analysis::enumerateDOF(m);  
   
-  cerr << "DOF enumeration done.\n";
-  
+  cout << "Analysis... \n";
   Analysis::doAnalise(m);
-  
-  cerr << "Analysis done.\n";
   
   if(debug) {
     Analysis::printTree(m->getRootNode());
@@ -88,24 +88,39 @@ int main(int argc, char ** argv)
     for (Element *e : m->getElements()) {
         Analysis::printElement(e);
     }
-    cerr << format("Root size: %d\n") % m->getRootNode()->getDofs().size();
+    cout << format("Root size: %d\n") % m->getRootNode()->getDofs().size();
   }
   
-  cerr << "Generating workflow graph..." << endl;
-  
+  cout << "Generating workflow graph... \n";  
   Workflow * w = buildWorkflow(m->getRootNode());
   
+  cout << format("Generated %d tasks.\n") % w->processes.size();
+  
   if(config.count("json")) {
-    cerr << "Writing JSON..." << endl;
+    cout << "Writing JSON...\n";
     writeFile(config["json"].as<string>(), w->json());
   }
 
   if(config.count("dot")) {
-    cerr << "Writing DOT..." << endl;
+    cout << "Writing DOT...\n";
     writeFile(config["dot"].as<string>(), w->dot());
   }
+  
+  if(config.count("tree")) {
+    cout << "Writing Tree...\n";
+    Tree t(m->getRootNode());
+    try {
+      ofstream f(config["tree"].as<string>());
+      f.exceptions ( ifstream::eofbit | ifstream::failbit | ifstream::badbit );    
+      boost::archive::text_oarchive oa(f);
+      oa << t;
+      f.close();
+    } catch (std::exception e) {
+      cout << format("Failed writing %s: %s") % config["tree"].as<string>() % e.what() << endl;    
+    }
+  }
         
-  cerr << "Done." << endl;
+  cout << "Finished!\n";
   
   return 0;
 }

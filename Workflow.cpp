@@ -3,6 +3,9 @@
 #include <boost/format.hpp>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>
+#include <boost/archive/text_iarchive.hpp>
+#include <boost/archive/text_oarchive.hpp>
+
 
 #include "Workflow.hpp"
 
@@ -100,13 +103,14 @@ Workflow * buildWorkflow(Node * root) {
   
   workflowElimination(w, root);
   workflowBackwardSubstitution(w, root);
-  
+    
   return w;
 }
 
 
+
 void workflowElimination(Workflow* w, Node *node)
-{
+{  
   bool isLeaf = (node->getLeft() == NULL || node->getRight() == NULL);
 
   if (!isLeaf) {
