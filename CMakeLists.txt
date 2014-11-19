@@ -19,3 +19,6 @@ target_link_libraries(Eliminate -ldl -lpthread -lcblas -llapack -lsatlas -ltatla
 add_executable(Backsubstitute Backsubstitute.cpp Workflow.cpp Tree.cpp)
 target_link_libraries(Backsubstitute -ldl -lpthread -lcblas -llapack -lsatlas -ltatlas -lcurses -lSolverLib -lboost_program_options -lboost_serialization -lmemcached)
 
+add_executable(SolverService SolverService.cpp Workflow.cpp Tree.cpp)
+target_link_libraries(SolverService -ldl -lpthread -lcblas -llapack -lsatlas -ltatlas -lcurses -lSolverLib -lboost_program_options -lboost_serialization -lmemcached -lSimpleAmqpClient)
+

@@ -10,6 +10,8 @@
 
 #include "graph_grammar_solver/Node.hpp"
 
+extern bool debug;
+
 namespace KV {
   using std::string;
   using std::cout;
@@ -21,14 +23,14 @@ namespace KV {
   const char * config_string= "--SERVER=localhost";
   
   inline void init() {
-    cout << "Connecting to memcached..." << endl;
+    if(debug) cout << "Connecting to memcached..." << endl;
     KV::memc = memcached(KV::config_string, strlen(KV::config_string));
-    cout << "Connected." << endl;
+    if(debug) cout << "Connected." << endl;
   }
   
   inline void deinit() {
     memcached_free(KV::memc);
-    cout << "Disconnected from memcached" << endl;
+    if(debug) cout << "Disconnected from memcached" << endl;
   }
 
   template<class T>
@@ -37,12 +39,12 @@ namespace KV {
     size_t data_length;
     memcached_return rc;
 
-    cout << format("Reading key: %s... \n") % key;
+    if(debug) cout << format("Reading key: %s... \n") % key;
     
     data = memcached_get (KV::memc, key.data(), key.size(), &data_length, 0, &rc);
-    if (rc == MEMCACHED_SUCCESS)
-      cout << format("Memcached read %s successfully %d bytes\n") % key % data_length;
-    else {
+    if (rc == MEMCACHED_SUCCESS) {
+      if(debug) cout << format("Memcached read %s successfully %d bytes\n") % key % data_length;
+    } else {
       cout << format("Memcached didn't store %s: %s\n") % key % memcached_strerror(KV::memc, rc);    
       throw;
     }
@@ -56,16 +58,16 @@ namespace KV {
   template<class T>
   void write(string key, T &value) {
     std::ostringstream os(std::stringstream::out | std::stringstream::binary);
-    cout << format("Writing key: %s... \n") % key;
+    if(debug) cout << format("Writing key: %s... \n") % key;
     boost::archive::binary_oarchive ia(os);
     ia << value;
     
     std::string data = os.str();
     
     memcached_return rc = memcached_set(KV::memc, key.data(), key.size(), data.data(), data.size(), (time_t)0, (uint32_t)0);
-    if (rc == MEMCACHED_SUCCESS)
-      cout << format("Memcached stored %s successfully %d bytes\n") % key % data.size();
-    else
+    if (rc == MEMCACHED_SUCCESS) {
+      if(debug) cout << format("Memcached stored %s successfully %d bytes\n") % key % data.size();
+    } else
       cout << format("Memcached didn't store %s: %s\n") % key % memcached_strerror(KV::memc, rc);    
   }
 

@@ -34,7 +34,7 @@ string Workflow::json(string common_args) {
   for(auto& p: this->processes) {
     ptree process, ins, outs, config, executor;
     process.put("name", p.command);
-    process.put("function", "command");
+    process.put("function", "amqpCommand");
     process.put("type", "dataflow");
     process.put("executor", "syscommand");
     
@@ -150,7 +150,7 @@ void workflowElimination(Workflow* w, Node *node)
   Signal * eliminatedMatrix = w->signal(str(format("%05d_schur"  ) % node->getId()));
   p.outs.push_back(eliminatedMatrix);            
 
-  p.args = str(format("--node %d ") % node->getId());
+  p.args = str(format("%d") % node->getId());
   w->processes.push_back(p);  
 }
 
@@ -175,7 +175,7 @@ void workflowBackwardSubstitution(Workflow* w, Node *node)
     p.outs.push_back(rightMatrix);
   } 
   
-  p.args = str(format("--node %d") % node->getId());
+  p.args = str(format("%d") % node->getId());
   w->processes.push_back(p);      
   
   if (node->getLeft() != NULL && node->getRight() != NULL) {
