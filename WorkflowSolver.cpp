@@ -7,6 +7,7 @@
 
 #include "Workflow.hpp"
 #include "Tree.hpp"
+#include "KVStore.hpp"
 
 #include <boost/format.hpp>
 #include <boost/program_options.hpp>
@@ -66,6 +67,8 @@ int main(int argc, char ** argv)
   if(!parseCommandLine(argc, argv)) 
     return 1;
   
+  KV::init();
+  
   string treefile = config["treefile"].as<string>();
   
   cout << format("Reading mesh file: %s... \n") % treefile;
@@ -109,18 +112,12 @@ int main(int argc, char ** argv)
   if(config.count("tree")) {
     cout << "Writing Tree...\n";
     Tree t(m->getRootNode());
-    try {
-      ofstream f(config["tree"].as<string>());
-      f.exceptions ( ifstream::eofbit | ifstream::failbit | ifstream::badbit );    
-      boost::archive::binary_oarchive oa(f);
-      oa << t;
-      f.close();
-    } catch (std::exception e) {
-      cout << format("Failed writing %s: %s") % config["tree"].as<string>() % e.what() << endl;    
-    }
+    KV::write(config["tree"].as<string>(), t);
   }
         
   cout << "Finished!\n";
+  
+  KV::deinit();
   
   return 0;
 }

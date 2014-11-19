@@ -53,12 +53,16 @@ int main(int argc, char ** argv)
   if(!parseCommandLine(argc, argv)) 
     return 1;
   
+  KV::init();
+  
   int node_id = config["node"].as<int>();
 
   Tree tree;
   Node * node;
 
   KV::read(KV::prefix, tree);
+  
+  cout << format("Got tree of %d nodes\n") % tree.nodes.size();
   
   node = tree.nodes.at(node_id);
 
@@ -79,6 +83,8 @@ int main(int argc, char ** argv)
   KV::write_matrix(node);
         
   cout << "Finished!\n";
+   
+  KV::deinit();
   
   return 0;
 }

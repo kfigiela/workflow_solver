@@ -53,6 +53,8 @@ int main(int argc, char ** argv)
   if(!parseCommandLine(argc, argv)) 
     return 1;
   
+  KV::init();
+  
   int node_id = config["node"].as<int>();
 
   Tree tree;
@@ -81,6 +83,8 @@ int main(int argc, char ** argv)
   }
         
   cout << "Finished!\n";
+ 
+  KV::deinit();
   
   return 0;
 }
