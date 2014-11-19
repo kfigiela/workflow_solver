@@ -19,3 +19,10 @@
    ```
    mkdir build && cd build && cmake .. && make
    ```
+   
+   
+## Memcached configuration
+
+```shell
+memcached -I 10m -M -m 2048m  -r 
+```
