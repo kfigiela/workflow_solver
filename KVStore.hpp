@@ -1,8 +1,8 @@
 #ifndef KVSTORE_HPP
 #define KVSTORE_HPP
 
-#include <boost/archive/text_oarchive.hpp>
-#include <boost/archive/text_iarchive.hpp>
+#include <boost/archive/binary_oarchive.hpp>
+#include <boost/archive/binary_iarchive.hpp>
 #include <string>
 #include <boost/format.hpp>
 #include "graph_grammar_solver/Node.hpp"
@@ -18,7 +18,7 @@ namespace KV {
   void read(string key, T &value) {
     std::ifstream is(key);
     cout << format("Reading file: %s... \n") % key;
-    boost::archive::text_iarchive ia(is);
+    boost::archive::binary_iarchive ia(is);
     ia >> value;
   }
 
@@ -26,7 +26,7 @@ namespace KV {
   void write(string key, T &value) {
     std::ofstream os(key);
     cout << format("Writing file: %s... \n") % key;
-    boost::archive::text_oarchive ia(os);
+    boost::archive::binary_oarchive ia(os);
     ia << value;
   }
 

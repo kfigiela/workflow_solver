@@ -112,7 +112,7 @@ int main(int argc, char ** argv)
     try {
       ofstream f(config["tree"].as<string>());
       f.exceptions ( ifstream::eofbit | ifstream::failbit | ifstream::badbit );    
-      boost::archive::text_oarchive oa(f);
+      boost::archive::binary_oarchive oa(f);
       oa << t;
       f.close();
     } catch (std::exception e) {
