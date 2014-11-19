@@ -46,14 +46,14 @@ string Workflow::json(string common_args) {
     
     for(auto s: p.ins) {
       ptree el;
-      el.put_value(s->id);
+      el.put_value(s->name);
       ins.push_back(std::make_pair("", el));
     }
     process.add_child("ins", ins);
     
     for(auto s: p.outs) {
       ptree el;
-      el.put_value(s->id);
+      el.put_value(s->name);
       outs.push_back(std::make_pair("", el));
     }
     process.add_child("outs", outs);
@@ -65,14 +65,14 @@ string Workflow::json(string common_args) {
   
   for(auto s: this->ins) {
     ptree el;
-    el.put_value(s->id);
+    el.put_value(s->name);
     ins.push_back(std::make_pair("", el));
   }  
   pt.add_child("ins", ins);
   
   for(auto s: this->outs) {
     ptree el;
-    el.put_value(s->id);
+    el.put_value(s->name);
     outs.push_back(std::make_pair("", el));
   }
   pt.add_child("outs", outs);
