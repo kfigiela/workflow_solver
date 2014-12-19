@@ -1,4 +1,12 @@
-// #include "DynamicLib.h"
+#include <boost/format.hpp>
+#include <boost/program_options.hpp>
+#include <sys/time.h>
+#include <iostream>
+#include <fstream>
+#include <sstream>
+#include <algorithm>
+#include <tuple>
+
 #include "graph_grammar_solver/Analysis.hpp"
 #include "graph_grammar_solver/Node.hpp"
 #include "graph_grammar_solver/Element.hpp"
@@ -8,12 +16,7 @@
 #include "Workflow.hpp"
 #include "Tree.hpp"
 #include "KVStore.hpp"
-
-#include <boost/format.hpp>
-#include <boost/program_options.hpp>
-#include <sys/time.h>
-#include <iostream>
-#include <fstream>
+#include "Util.hpp"
 
 using namespace std;
 using boost::format;
@@ -28,10 +31,12 @@ bool parseCommandLine(int argc, char ** argv) {
   po::options_description desc("Options"); 
   desc.add_options() 
        ("help,h", "Print help messages") 
-       ("treefile", po::value<string>()->required(), "Tree file") 
-       ("json", po::value<string>(), "Output workflow JSON")
-       ("dot", po::value<string>(), "Output DOT file")
-       ("tree", po::value<string>()->required(), "Output serialized tree")
+       ("treefile", po::value<string>()->required(), "Input tree file") 
+       ("json", po::value<string>(), "Output workflow JSON filename")
+       ("dot", po::value<string>(), "Output workflow DOT filename ")
+       ("tree", po::value<string>(), "Output tree prefix in Memcached store")
+       ("treedot", po::value<string>(), "Output tree DOT filename")
+       ("mesh", po::value<string>(), "Output mesh SVG filename")
        ("debug,d", po::bool_switch(&debug)->default_value(false), "Debug mode (verbose)")
   ;
    
@@ -66,9 +71,7 @@ int main(int argc, char ** argv)
 {  
   if(!parseCommandLine(argc, argv)) 
     return 1;
-  
-  KV::init();
-  
+    
   string treefile = config["treefile"].as<string>();
   
   cout << format("Reading mesh file: %s... \n") % treefile;
@@ -97,6 +100,8 @@ int main(int argc, char ** argv)
   cout << "Generating workflow graph... \n";  
   Workflow * w = buildWorkflow(m->getRootNode());
   
+  Tree t(m->getRootNode());
+  
   cout << format("Generated %d tasks.\n") % w->processes.size();
   
   if(config.count("json")) {
@@ -108,16 +113,24 @@ int main(int argc, char ** argv)
     cout << "Writing DOT...\n";
     writeFile(config["dot"].as<string>(), w->dot());
   }
-  
+
+  if(config.count("mesh")) {
+    cout << "Writing Mesh SVG...\n";
+    writeFile(config["mesh"].as<string>(), Util::mesh_svg(m));
+  }
+    
   if(config.count("tree")) {
     cout << "Writing Tree...\n";
-    Tree t(m->getRootNode());
+    KV::init();    
     KV::write(config["tree"].as<string>(), t);
+    KV::deinit();
+  }
+  
+  if(config.count("treedot")) {
+    writeFile(config["treedot"].as<string>(), t.dot());
   }
         
   cout << "Finished!\n";
-  
-  KV::deinit();
   
   return 0;
 }

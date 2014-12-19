@@ -3,6 +3,7 @@
 
 #include <map>
 #include <fstream>
+#include <string>
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/serialization/vector.hpp>
@@ -27,6 +28,7 @@ struct Tree {
   Tree(Node * root);
   
   void traverseTree(Node * node);
+  std::string dot();
 };
 
 #endif
