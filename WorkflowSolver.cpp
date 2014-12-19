@@ -1,8 +1,6 @@
 #include <boost/format.hpp>
 #include <boost/program_options.hpp>
 #include <sys/time.h>
-#include <iostream>
-#include <fstream>
 #include <sstream>
 #include <algorithm>
 #include <tuple>
@@ -56,16 +54,7 @@ bool parseCommandLine(int argc, char ** argv) {
   return true;
 }
 
-void writeFile(string name, string content) {
-  try {
-    ofstream f(name);
-    f.exceptions ( ifstream::eofbit | ifstream::failbit | ifstream::badbit );    
-    f << content;
-    f.close();    
-  } catch (std::exception e) {
-    cout << format("Failed writing %s: %s") % name % e.what() << endl;    
-  }
-}
+
 
 int main(int argc, char ** argv)
 {  
@@ -106,17 +95,17 @@ int main(int argc, char ** argv)
   
   if(config.count("json")) {
     cout << "Writing JSON...\n";
-    writeFile(config["json"].as<string>(), w->json());
+    Util::writeFile(config["json"].as<string>(), w->json());
   }
 
   if(config.count("dot")) {
     cout << "Writing DOT...\n";
-    writeFile(config["dot"].as<string>(), w->dot());
+    Util::writeFile(config["dot"].as<string>(), w->dot());
   }
 
   if(config.count("mesh")) {
     cout << "Writing Mesh SVG...\n";
-    writeFile(config["mesh"].as<string>(), Util::mesh_svg(m));
+    Util::writeFile(config["mesh"].as<string>(), Util::mesh_svg(m));
   }
     
   if(config.count("tree")) {
@@ -127,7 +116,7 @@ int main(int argc, char ** argv)
   }
   
   if(config.count("treedot")) {
-    writeFile(config["treedot"].as<string>(), t.dot());
+    Util::writeFile(config["treedot"].as<string>(), t.dot());
   }
         
   cout << "Finished!\n";

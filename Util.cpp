@@ -1,11 +1,15 @@
 #include "Util.hpp"
 
+#include <string>
 #include <sstream>
 #include <boost/format.hpp>
+#include <iostream>
+#include <fstream>
 
 #include "graph_grammar_solver/Mesh.hpp"
 
 using boost::format;
+using namespace std;
 
 std::string Util::mesh_svg(Mesh * m) {
   std::ostringstream buf;
@@ -27,4 +31,15 @@ std::string Util::mesh_svg(Mesh * m) {
   
   buf << "</svg>";
   return buf.str();
+}
+
+void Util::writeFile(string name, string content) {
+  try {
+    ofstream f(name);
+    f.exceptions ( ifstream::eofbit | ifstream::failbit | ifstream::badbit );    
+    f << content;
+    f.close();    
+  } catch (std::exception e) {
+    cout << format("Failed writing %s: %s") % name % e.what() << endl;    
+  }
 }
