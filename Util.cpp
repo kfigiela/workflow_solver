@@ -5,11 +5,39 @@
 #include <boost/format.hpp>
 #include <iostream>
 #include <fstream>
+#include <tuple>
+#include <cmath>
 
 #include "graph_grammar_solver/Mesh.hpp"
 
 using boost::format;
 using namespace std;
+
+
+rgb Util::hsv2rgb( double h, double s, double v ) {
+  double r,g,b;
+
+  int i = int(h * 6);
+  double f = h * 6 - i;
+  double p = v * (1 - s);
+  double q = v * (1 - f * s);
+  double t = v * (1 - (1 - f) * s);
+
+  switch(i % 6){
+      case 0: r = v, g = t, b = p; break;
+      case 1: r = q, g = v, b = p; break;
+      case 2: r = p, g = v, b = t; break;
+      case 3: r = p, g = q, b = v; break;
+      case 4: r = t, g = p, b = v; break;
+      case 5: r = v, g = p, b = q; break;
+  }
+ 
+  return rgb(r*255, g*255, b*255);
+}
+
+std::string Util::rgb2str(rgb color) {
+  return (format("#%02x%02x%02x") % (int)std::get<0>(color) % (int)std::get<1>(color) % (int)std::get<2>(color)).str();
+}
 
 std::string Util::mesh_svg(Mesh * m) {
   std::ostringstream buf;
@@ -25,8 +53,10 @@ std::string Util::mesh_svg(Mesh * m) {
   buf << "<!DOCTYPE svg PUBLIC \"-//W3C//DTD SVG 1.1//EN\" \"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd\">\n";
   buf << format("<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"1024\" height=\"1024\" viewBox=\"%d %d %d %d\" version=\"1.1\">\n") % (*min_x)->x1 % (*min_y)->y1 % (*max_x)->x2 % (*max_y)->y2;
   
+  auto color = [](int k) { return rgb2str(hsv2rgb(fmod(k*0.2, 1), 1, 1)); };
+  
   for(auto e: elements) {
-    buf << format("<rect x='%f' y='%f' width='%f' height='%f' stroke='black' stroke-width='1' style='fill: hsl(%ld, 100%%, 50%%);'/>\n") % e->x1 % e->y1 % (e->x2-e->x1) % (e->y2-e->y1) % (e->k*50);
+    buf << format("<rect x='%f' y='%f' width='%f' height='%f' stroke='black' stroke-width='1' fill=\"%s\"/>\n") % e->x1 % e->y1 % (e->x2-e->x1) % (e->y2-e->y1) % color(e->k);
   }
   
   buf << "</svg>";
