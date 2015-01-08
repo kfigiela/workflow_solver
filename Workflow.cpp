@@ -42,6 +42,8 @@ string Workflow::json(string common_args) {
     executor.put("args", common_args + p.args);    
     
     config.add_child("executor", executor);
+    config.put("mem", p.mem);
+    config.put("flops", p.flops);
     process.add_child("config", config);
     
     for(auto s: p.ins) {
@@ -135,7 +137,7 @@ void workflowElimination(Workflow* w, Node *node)
       workflowElimination(w, node->getRight());
   }
   
-  Process p("Eliminate");
+  Process p("Eliminate", node->getSizeInMemory(), node->getFLOPs());
   if(isLeaf) {
     Signal * elementMatrix = w->signal(str(format("%05d_element") % node->getId()));
     p.ins.push_back(elementMatrix);

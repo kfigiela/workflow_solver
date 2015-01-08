@@ -26,8 +26,11 @@ public:
   vector<Signal*> outs;
   const string command;
   string args;
+  unsigned long mem;
+  unsigned long flops;
   
-  Process(string command): command(command) {};
+  Process(string command): command(command), mem(0), flops(0) {};
+  Process(string command, unsigned long mem, unsigned long flops): command(command), mem(mem), flops(flops) {};
 };
 
 class Workflow {
