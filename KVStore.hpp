@@ -26,7 +26,7 @@ namespace KV {
   template<class T>
   void read(string key, T &value) {
     std::ifstream is(key);
-    cout << format("Reading file: %s... \n") % key;
+    // cout << format("Reading file: %s... \n") % key;
     boost::archive::binary_iarchive ia(is);
     ia >> value;
   }
@@ -34,7 +34,7 @@ namespace KV {
   template<class T>
   void write(string key, T &value) {
     std::ofstream os(key);
-    cout << format("Writing file: %s... \n") % key;
+    // cout << format("Writing file: %s... \n") % key;
     boost::archive::binary_oarchive ia(os);
     ia << value;
   }

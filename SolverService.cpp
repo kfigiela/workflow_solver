@@ -153,7 +153,7 @@ int main(int argc, char ** argv)
       string operation = pt.get<string>("executable");
       string node_id = pt.get<string>("args");
       
-      std::cout << format("%s(%s)\n") % operation % node_id;
+      if(debug) std::cout << format("%s(%s)\n") % operation % node_id;
       if(operation == "Eliminate") {
         eliminate(atoi(node_id.c_str()));
       } else if(operation == "Backsubstitute") {
