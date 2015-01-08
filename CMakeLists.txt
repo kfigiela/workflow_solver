@@ -11,14 +11,14 @@ link_directories(graph_grammar_solver/build)
 
 
 add_executable(WorkflowSolver WorkflowSolver.cpp Workflow.cpp Tree.cpp Util.cpp)
-target_link_libraries(WorkflowSolver -ldl -lpthread -lcblas -llapack -lsatlas -ltatlas -lcurses -lSolverLib -lboost_program_options -lboost_serialization -lmemcached)
+target_link_libraries(WorkflowSolver -ldl -lpthread -lcblas -llapack -lsatlas -ltatlas -lcurses -lSolverLib -lboost_program_options -lboost_serialization)
 
 add_executable(Eliminate Eliminate.cpp Workflow.cpp Tree.cpp Util.cpp)
-target_link_libraries(Eliminate -ldl -lpthread -lcblas -llapack -lsatlas -ltatlas -lcurses -lSolverLib -lboost_program_options -lboost_serialization -lmemcached)
+target_link_libraries(Eliminate -ldl -lpthread -lcblas -llapack -lsatlas -ltatlas -lcurses -lSolverLib -lboost_program_options -lboost_serialization)
 
 add_executable(Backsubstitute Backsubstitute.cpp Workflow.cpp Tree.cpp Util.cpp)
-target_link_libraries(Backsubstitute -ldl -lpthread -lcblas -llapack -lsatlas -ltatlas -lcurses -lSolverLib -lboost_program_options -lboost_serialization -lmemcached)
+target_link_libraries(Backsubstitute -ldl -lpthread -lcblas -llapack -lsatlas -ltatlas -lcurses -lSolverLib -lboost_program_options -lboost_serialization)
 
 add_executable(SolverService SolverService.cpp Workflow.cpp Tree.cpp  Util.cpp)
-target_link_libraries(SolverService -ldl -lpthread -lcblas -llapack -lsatlas -ltatlas -lcurses -lSolverLib -lboost_program_options -lboost_serialization -lmemcached -lSimpleAmqpClient)
+target_link_libraries(SolverService -ldl -lpthread -lcblas -llapack -lsatlas -ltatlas -lcurses -lSolverLib -lboost_program_options -lboost_serialization -lSimpleAmqpClient)
 
