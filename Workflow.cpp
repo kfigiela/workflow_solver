@@ -151,7 +151,7 @@ void workflowElimination(Workflow* w, Node *node)
       workflowElimination(w, node->getRight());
   }
   
-  Process p("Eliminate", node->getSizeInMemory(), node->getFLOPs());
+  Process p("Eliminate", node->getSizeInMemory(false), node->getFLOPs(false));
   if(isLeaf) {
     Signal * elementMatrix = w->signal(str(format("%05d_element") % node->getId()));
     p.ins.push_back(elementMatrix);
