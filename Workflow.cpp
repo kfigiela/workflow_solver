@@ -62,7 +62,6 @@ string Workflow::json(string common_args) {
     
     processes.push_back(std::make_pair("", process));
   }
-  pt.add_child("processes", processes);
   
   
   for(auto s: this->ins) {
@@ -79,6 +78,21 @@ string Workflow::json(string common_args) {
   }
   pt.add_child("outs", outs);
   
+  
+  ptree exit_process, empty;
+  
+  exit_process.put("name", "Done");
+  exit_process.put("function", "exit");
+  exit_process.put("type", "dataflow");
+  exit_process.put("executor", "syscommand");
+  exit_process.add_child("ins", outs);
+  exit_process.add_child("outs", empty);
+  
+  
+  processes.push_back(std::make_pair("", exit_process));
+  
+  pt.add_child("processes", processes);
+
   std::ostringstream buf; 
   write_json (buf, pt, true);
   return buf.str();
