@@ -4,6 +4,7 @@
 #include <sstream>
 #include <algorithm>
 #include <tuple>
+#include <set>
 
 #include "graph_grammar_solver/Analysis.hpp"
 #include "graph_grammar_solver/Node.hpp"
@@ -76,6 +77,17 @@ int main(int argc, char ** argv)
   
   cout << "Analysis... \n";
   Analysis::doAnalise(m);
+  
+  
+  // Count number of DOFs aka size of the "big" matrix
+  std::set<uint64_t> dofs;  
+  for (Element *e : m->getElements()) {
+    for(uint64_t dof: e->dofs) {
+      dofs.insert(dof);
+    }
+  }
+  
+  cout << "Number of DOFs: " << dofs.size() << std::endl;
   
   if(debug) {
     Analysis::printTree(m->getRootNode());
