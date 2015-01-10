@@ -26,8 +26,12 @@ namespace po = boost::program_options;
 
 po::variables_map config;
 bool debug = false;
+bool profiling = false;
 Tree tree;
 
+
+
+ofstream benchmark("benchmark.txt");
 
 bool parseCommandLine(int argc, char ** argv) {
   po::options_description desc("Options"); 
@@ -35,6 +39,7 @@ bool parseCommandLine(int argc, char ** argv) {
        ("help,h", "Print help messages") 
        ("tree", po::value<string>(&KV::prefix)->required(), "Input serialized tree")
        ("debug,d", po::bool_switch(&debug)->default_value(false), "Debug mode (verbose)")
+       ("profiling", po::bool_switch(&profiling)->default_value(false), "Profiling (to stderr)")
   ;
    
   try {
@@ -54,11 +59,14 @@ bool parseCommandLine(int argc, char ** argv) {
 }
 
 void eliminate(int node_id) {
+  struct timespec requestStart, requestEnd;
   Node * node;
+  
+  clock_gettime(CLOCK_REALTIME, &requestStart);
   
   node = tree.nodes.at(node_id);
   node->allocateSystem(OLD);
-    
+  int n  = node->system->n;
   if(node->getLeft() != NULL && node->getRight() != NULL) { 
     KV::read_matrix(node->getLeft());
     KV::read_matrix(node->getRight());
@@ -70,7 +78,7 @@ void eliminate(int node_id) {
   if(debug) cout << format("Eliminaing node: %d... \n") % node->getId();
 
   node->eliminate();
-  
+    
   KV::write_matrix(node);
   
   node->deallocateSystem();
@@ -78,6 +86,9 @@ void eliminate(int node_id) {
     node->getLeft()->deallocateSystem();
     node->getRight()->deallocateSystem();
   }
+  clock_gettime(CLOCK_REALTIME, &requestEnd);
+
+  benchmark << "Eliminate" << "\t" << node_id << "\t" << n << "\t" << node->getSizeInMemory() << "\t" << node->getFLOPs() << "\t" << ( requestEnd.tv_sec - requestStart.tv_sec ) + ( requestEnd.tv_nsec - requestStart.tv_nsec ) / 1E9 << std::endl;
 }
 
 void bs(int node_id) {
@@ -121,8 +132,8 @@ int main(int argc, char ** argv)
   KV::read(KV::prefix, tree);
   
   cout << format("Got tree of %d nodes\n") % tree.nodes.size();
-  
-  
+  benchmark << "Task Id N Mem FLOPs Time\n";
+
   try
   {
     using namespace AmqpClient;
@@ -130,7 +141,7 @@ int main(int argc, char ** argv)
     Channel::ptr_t channel = Channel::Create();
 
     channel->DeclareQueue("hyperflow.jobs", false, true, false, false);
-    channel->BasicConsume("hyperflow.jobs", "ct", true, false, false, 10);
+    channel->BasicConsume("hyperflow.jobs", "ct", true, false, false, 100);
 
     Envelope::ptr_t env;  
     while (channel->BasicConsumeMessage("ct", env))
@@ -154,6 +165,7 @@ int main(int argc, char ** argv)
       string node_id = pt.get<string>("args");
       
       if(debug) std::cout << format("%s(%s)\n") % operation % node_id;
+
       if(operation == "Eliminate") {
         eliminate(atoi(node_id.c_str()));
       } else if(operation == "Backsubstitute") {
@@ -161,7 +173,7 @@ int main(int argc, char ** argv)
       } else {
         cout << format("Unknown operation %s:\n") % operation;
       }
-      
+     
       {
         boost::property_tree::ptree reply;      
         reply.put("exit_status", "0");
@@ -186,7 +198,7 @@ int main(int argc, char ** argv)
      std::cout << "Failure: " << e.what();
   }
 
-        
+  benchmark.close();
   cout << "Finished!\n";
    
   KV::deinit();
