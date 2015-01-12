@@ -131,25 +131,25 @@ Signal * Workflow::signal(string name) {
 }
 
 
-Workflow * buildWorkflow(Node * root) {
+Workflow * buildWorkflow(Node * root, unsigned long threshold) {
   Workflow * w = new Workflow();
   
-  workflowElimination(w, root);
-  workflowBackwardSubstitution(w, root);
+  workflowElimination(w, root, threshold);
+  workflowBackwardSubstitution(w, root, threshold);
     
   return w;
 }
 
 
 
-void workflowElimination(Workflow* w, Node *node)
+void workflowElimination(Workflow* w, Node *node, unsigned long threshold)
 {  
   bool isLeaf = (node->getLeft() == NULL || node->getRight() == NULL);
-  bool aggregate = node->getFLOPs(true) < 150149080;
+  bool aggregate = node->getFLOPs(true) < threshold;
 
   if (!isLeaf && !aggregate) {
-      workflowElimination(w, node->getLeft());
-      workflowElimination(w, node->getRight());
+      workflowElimination(w, node->getLeft(), threshold);
+      workflowElimination(w, node->getRight(), threshold);
   }
   
   Process p(aggregate?"SeqEliminate":"Eliminate", node->getSizeInMemory(false), node->getFLOPs(true));
@@ -171,10 +171,10 @@ void workflowElimination(Workflow* w, Node *node)
   w->processes.push_back(p);  
 }
 
-void workflowBackwardSubstitution(Workflow* w, Node *node)
+void workflowBackwardSubstitution(Workflow* w, Node *node, unsigned long threshold)
 {
   bool isLeaf = (node->getLeft() == NULL || node->getRight() == NULL);
-  bool aggregate = node->getFLOPs(true) < 150149080;
+  bool aggregate = node->getFLOPs(true) < threshold;
     
   Process p(aggregate?"SeqBacksubstitute":"Backsubstitute");
   
@@ -197,7 +197,7 @@ void workflowBackwardSubstitution(Workflow* w, Node *node)
   w->processes.push_back(p);      
   
   if (node->getLeft() != NULL && node->getRight() != NULL && !aggregate) {
-    workflowBackwardSubstitution(w, node->getLeft());
-    workflowBackwardSubstitution(w, node->getRight());
+    workflowBackwardSubstitution(w, node->getLeft(), threshold);
+    workflowBackwardSubstitution(w, node->getRight(), threshold);
   }
 }

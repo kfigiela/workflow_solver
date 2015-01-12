@@ -35,6 +35,7 @@ bool parseCommandLine(int argc, char ** argv) {
        ("dot", po::value<string>(), "Output workflow DOT filename ")
        ("tree", po::value<string>(), "Output tree prefix in Memcached store")
        ("treedot", po::value<string>(), "Output tree DOT filename")
+       ("aggregate", po::value<unsigned long>()->default_value(0), "Aggregation threshold (FLOPs)")
        ("mesh", po::value<string>(), "Output mesh SVG filename")
        ("debug,d", po::bool_switch(&debug)->default_value(false), "Debug mode (verbose)")
   ;
@@ -99,7 +100,7 @@ int main(int argc, char ** argv)
   }
   
   cout << "Generating workflow graph... \n";  
-  Workflow * w = buildWorkflow(m->getRootNode());
+  Workflow * w = buildWorkflow(m->getRootNode(), config["aggregate"].as<unsigned long>());
   
   Tree t(m->getRootNode());
   

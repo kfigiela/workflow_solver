@@ -46,8 +46,8 @@ public:
   Signal * signal(string name);  
 };
 
-void workflowElimination(Workflow* w, Node *node);
-void workflowBackwardSubstitution(Workflow* w, Node *node);
-Workflow * buildWorkflow(Node * root);
+void workflowElimination(Workflow* w, Node *node, unsigned long threshold);
+void workflowBackwardSubstitution(Workflow* w, Node *node, unsigned long threshold);
+Workflow * buildWorkflow(Node * root, unsigned long threshold);
 
 #endif
