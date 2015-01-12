@@ -54,9 +54,6 @@ void clock_gettime(int sth, struct timespec * t) {
 
 #endif
 
-
-ofstream benchmark("benchmark.txt");
-
 bool parseCommandLine(int argc, char ** argv) {
   po::options_description desc("Options"); 
   desc.add_options() 
@@ -83,14 +80,10 @@ bool parseCommandLine(int argc, char ** argv) {
 }
 
 void eliminate(int node_id) {
-  struct timespec requestStart, requestEnd;
   Node * node;
   
-  clock_gettime(CLOCK_REALTIME, &requestStart);
-  
   node = tree.nodes.at(node_id);
-  node->allocateSystem(OLD);
-  int n  = node->system->n;
+  node->allocateSystem(LU);
   if(node->getLeft() != NULL && node->getRight() != NULL) { 
     KV::read_matrix(node->getLeft());
     KV::read_matrix(node->getRight());
@@ -110,9 +103,6 @@ void eliminate(int node_id) {
     node->getLeft()->deallocateSystem();
     node->getRight()->deallocateSystem();
   }
-  clock_gettime(CLOCK_REALTIME, &requestEnd);
-
-  benchmark << "Eliminate" << "\t" << node_id << "\t" << n << "\t" << node->getSizeInMemory() << "\t" << node->getFLOPs() << "\t" << ( requestEnd.tv_sec - requestStart.tv_sec ) + ( requestEnd.tv_nsec - requestStart.tv_nsec ) / 1E9 << std::endl;
 }
 
 void bs(int node_id) {
@@ -172,7 +162,7 @@ int main(int argc, char ** argv)
   KV::read(KV::prefix, tree);
   
   cout << format("Got tree of %d nodes\n") % tree.nodes.size();
-  benchmark << "Task Id N Mem FLOPs Time\n";
+  if(profiling) std::cerr << "Task Id Time\n";
 
   try
   {
@@ -206,6 +196,11 @@ int main(int argc, char ** argv)
       
       if(debug) std::cout << format("%s(%s)\n") % operation % node_id;
 
+      struct timespec requestStart, requestEnd;  
+      
+      if(profiling) clock_gettime(CLOCK_REALTIME, &requestStart);
+
+
       if(operation == "Eliminate") {
         eliminate(atoi(node_id.c_str()));
       } else if(operation == "Backsubstitute") {
@@ -220,6 +215,10 @@ int main(int argc, char ** argv)
         cout << format("Unknown operation %s:\n") % operation;
       }
      
+      if(profiling) {
+        clock_gettime(CLOCK_REALTIME, &requestEnd);
+        std::cerr << operation << "\t" << node_id << "\t" << "\t" << ( requestEnd.tv_sec - requestStart.tv_sec ) + ( requestEnd.tv_nsec - requestStart.tv_nsec ) / 1E9 << std::endl;
+      }
       {
         boost::property_tree::ptree reply;      
         reply.put("exit_status", "0");
@@ -244,7 +243,6 @@ int main(int argc, char ** argv)
      std::cout << "Failure: " << e.what();
   }
 
-  benchmark.close();
   cout << "Finished!\n";
    
   KV::deinit();
