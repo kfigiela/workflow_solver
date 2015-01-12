@@ -145,13 +145,14 @@ Workflow * buildWorkflow(Node * root) {
 void workflowElimination(Workflow* w, Node *node)
 {  
   bool isLeaf = (node->getLeft() == NULL || node->getRight() == NULL);
+  bool aggregate = node->getFLOPs(true) < 150149080;
 
-  if (!isLeaf) {
+  if (!isLeaf && !aggregate) {
       workflowElimination(w, node->getLeft());
       workflowElimination(w, node->getRight());
   }
   
-  Process p("Eliminate", node->getSizeInMemory(false), node->getFLOPs(false));
+  Process p(aggregate?"SeqEliminate":"Eliminate", node->getSizeInMemory(false), node->getFLOPs(true));
   if(isLeaf) {
     Signal * elementMatrix = w->signal(str(format("%05d_element") % node->getId()));
     p.ins.push_back(elementMatrix);
@@ -173,13 +174,14 @@ void workflowElimination(Workflow* w, Node *node)
 void workflowBackwardSubstitution(Workflow* w, Node *node)
 {
   bool isLeaf = (node->getLeft() == NULL || node->getRight() == NULL);
-  
-  Process p("Backsubstitute");
+  bool aggregate = node->getFLOPs(true) < 150149080;
+    
+  Process p(aggregate?"SeqBacksubstitute":"Backsubstitute");
   
   Signal * nodeMatrix = w->signal(str(format("%05d_%s") % node->getId() % (node->getParent() == NULL?"schur":"bs")));
   p.ins.push_back(nodeMatrix);
 
-  if (isLeaf) {
+  if (isLeaf || aggregate) {
     Signal * solutionMatrix = w->signal(str(format("%05d_sol") % node->getId()));
     p.outs.push_back(solutionMatrix);
     w->outs.push_back(solutionMatrix);
@@ -194,7 +196,7 @@ void workflowBackwardSubstitution(Workflow* w, Node *node)
   p.args = str(format("%d") % node->getId());
   w->processes.push_back(p);      
   
-  if (node->getLeft() != NULL && node->getRight() != NULL) {
+  if (node->getLeft() != NULL && node->getRight() != NULL && !aggregate) {
     workflowBackwardSubstitution(w, node->getLeft());
     workflowBackwardSubstitution(w, node->getRight());
   }

@@ -30,6 +30,30 @@ bool profiling = false;
 Tree tree;
 
 
+#ifdef __MACH__
+
+#include <mach/mach_time.h>
+#define ORWL_NANO (+1.0E-9)
+#define ORWL_GIGA UINT64_C(1000000000)
+
+static double orwl_timebase = 0.0;
+static uint64_t orwl_timestart = 0;
+#define CLOCK_REALTIME 0
+void clock_gettime(int sth, struct timespec * t) {
+  if (!orwl_timestart) {
+    mach_timebase_info_data_t tb = { 0 };
+    mach_timebase_info(&tb);
+    orwl_timebase = tb.numer;
+    orwl_timebase /= tb.denom;
+    orwl_timestart = mach_absolute_time();
+  }
+  double diff = (mach_absolute_time() - orwl_timestart) * orwl_timebase;
+  t->tv_sec = diff * ORWL_NANO;
+  t->tv_nsec = diff - (t->tv_sec * ORWL_GIGA);
+}
+
+#endif
+
 
 ofstream benchmark("benchmark.txt");
 
@@ -122,6 +146,22 @@ void bs(int node_id) {
   node->deallocateSystem();  
 }
 
+void seq_eliminate(Node* node) {
+  if(node->getLeft() != NULL && node->getRight() != NULL) { 
+    seq_eliminate(node->getLeft());
+    seq_eliminate(node->getRight());
+  }
+  eliminate(node->getId());
+}
+
+void seq_bs(Node* node) {
+  bs(node->getId());
+  if(node->getLeft() != NULL && node->getRight() != NULL) { 
+    seq_bs(node->getLeft());
+    seq_bs(node->getRight());
+  }
+}
+
 int main(int argc, char ** argv)
 {  
   if(!parseCommandLine(argc, argv)) 
@@ -170,6 +210,12 @@ int main(int argc, char ** argv)
         eliminate(atoi(node_id.c_str()));
       } else if(operation == "Backsubstitute") {
         bs(atoi(node_id.c_str()));
+      } else if(operation == "SeqEliminate") {
+        Node * node = tree.nodes.at(atoi(node_id.c_str()));
+        seq_eliminate(node);
+      } else if(operation == "SeqBacksubstitute") {
+        Node * node = tree.nodes.at(atoi(node_id.c_str()));
+        seq_bs(node);
       } else {
         cout << format("Unknown operation %s:\n") % operation;
       }
