@@ -153,7 +153,7 @@ void workflowElimination(Workflow* w, Node *node)
   }
   
   Process p(aggregate?"SeqEliminate":"Eliminate", node->getSizeInMemory(false), node->getFLOPs(true));
-  if(isLeaf) {
+  if(isLeaf || aggregate) {
     Signal * elementMatrix = w->signal(str(format("%05d_element") % node->getId()));
     p.ins.push_back(elementMatrix);
     w->ins.push_back(elementMatrix);
