@@ -13,7 +13,7 @@ using std::vector;
 using std::map;
 
 class Signal {
-  
+
 public:
   unsigned int id;
   string name;
@@ -28,9 +28,10 @@ public:
   string args;
   unsigned long mem;
   unsigned long flops;
-  
-  Process(string command): command(command), mem(0), flops(0) {};
-  Process(string command, unsigned long mem, unsigned long flops): command(command), mem(mem), flops(flops) {};
+  int workerId;
+
+  Process(string command): command(command), mem(0), flops(0), workerId(0) {};
+  Process(string command, unsigned long mem, unsigned long flops, int workerId): command(command), mem(mem), flops(flops), workerId(workerId) {};
 };
 
 class Workflow {
@@ -39,15 +40,15 @@ public:
   map<string, Signal> signals;
 
   vector<Signal*> ins;
-  vector<Signal*> outs;  
-  
+  vector<Signal*> outs;
+
   string json(string common_args = "");
   string dot();
-  Signal * signal(string name);  
+  Signal * signal(string name);
 };
 
-void workflowElimination(Workflow* w, Node *node, unsigned long threshold);
-void workflowBackwardSubstitution(Workflow* w, Node *node, unsigned long threshold);
-Workflow * buildWorkflow(Node * root, unsigned long threshold);
+void workflowElimination(Workflow* w, Node *node, unsigned long threshold, int numWorkers);
+void workflowBackwardSubstitution(Workflow* w, Node *node, unsigned long threshold, int numWorkers);
+Workflow * buildWorkflow(Node * root, unsigned long threshold, int numWorkers);
 
 #endif

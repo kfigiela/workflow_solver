@@ -20,18 +20,20 @@
 using namespace std;
 using boost::format;
 using boost::io::group;
-namespace po = boost::program_options; 
+namespace po = boost::program_options;
 
 po::variables_map config;
 
 bool debug = false;
+int numWorkers;
 
 bool parseCommandLine(int argc, char ** argv) {
-  po::options_description desc("Options"); 
-  desc.add_options() 
-       ("help,h", "Print help messages") 
-       ("treefile", po::value<string>()->required(), "Input tree file") 
+  po::options_description desc("Options");
+  desc.add_options()
+       ("help,h", "Print help messages")
+       ("treefile", po::value<string>()->required(), "Input tree file")
        ("json", po::value<string>(), "Output workflow JSON filename")
+       ("workers", po::value<int>(&numWorkers)->default_value(1), "Number of workers")
        ("dot", po::value<string>(), "Output workflow DOT filename ")
        ("tree", po::value<string>(), "Output tree prefix in Memcached store")
        ("treedot", po::value<string>(), "Output tree DOT filename")
@@ -39,15 +41,15 @@ bool parseCommandLine(int argc, char ** argv) {
        ("mesh", po::value<string>(), "Output mesh SVG filename")
        ("debug,d", po::bool_switch(&debug)->default_value(false), "Debug mode (verbose)")
   ;
-   
+
   try {
     po::store(po::parse_command_line(argc, argv, desc), config);
-  
+
     if (config.count("help")) {
         cout << desc << endl;
         return false;
     }
-    po::notify(config);  
+    po::notify(config);
   } catch (boost::program_options::required_option e) {
     cout << "Error: " << e.what() << endl << endl;
     cout << desc << endl;
@@ -59,37 +61,37 @@ bool parseCommandLine(int argc, char ** argv) {
 
 
 int main(int argc, char ** argv)
-{  
-  if(!parseCommandLine(argc, argv)) 
+{
+  if(!parseCommandLine(argc, argv))
     return 1;
-    
+
   string treefile = config["treefile"].as<string>();
-  
+
   cout << format("Reading mesh file: %s... \n") % treefile;
-  
+
   Mesh *m  = Mesh::loadFromFile(treefile.c_str());
   if (m == NULL) {
     cout << "Failed. Could not load the mesh. Exiting.\n";
     exit(1);
   }
-  
+
   cout << "DOF enumeration... \n";
-  Analysis::enumerateDOF(m);  
-  
+  Analysis::enumerateDOF(m);
+
   cout << "Analysis... \n";
   Analysis::doAnalise(m);
-  
-  
+
+
   // Count number of DOFs aka size of the "big" matrix
-  std::set<uint64_t> dofs;  
+  std::set<uint64_t> dofs;
   for (Element *e : m->getElements()) {
     for(uint64_t dof: e->dofs) {
       dofs.insert(dof);
     }
   }
-  
+
   cout << "Number of DOFs: " << dofs.size() << std::endl;
-  
+
   if(debug) {
     Analysis::printTree(m->getRootNode());
 
@@ -98,14 +100,14 @@ int main(int argc, char ** argv)
     }
     cout << format("Root size: %d\n") % m->getRootNode()->getDofs().size();
   }
-  
-  cout << "Generating workflow graph... \n";  
-  Workflow * w = buildWorkflow(m->getRootNode(), config["aggregate"].as<unsigned long>());
-  
+
+  cout << "Generating workflow graph... \n";
+  Workflow * w = buildWorkflow(m->getRootNode(), config["aggregate"].as<unsigned long>(), numWorkers);
+
   Tree t(m->getRootNode());
-  
+
   cout << format("Generated %d tasks.\n") % w->processes.size();
-  
+
   if(config.count("json")) {
     cout << "Writing JSON...\n";
     Util::writeFile(config["json"].as<string>(), w->json());
@@ -120,19 +122,19 @@ int main(int argc, char ** argv)
     cout << "Writing Mesh SVG...\n";
     Util::writeFile(config["mesh"].as<string>(), Util::mesh_svg(m));
   }
-    
+
   if(config.count("tree")) {
     cout << "Writing Tree...\n";
-    KV::init();    
+    KV::init();
     KV::write(config["tree"].as<string>(), t);
     KV::deinit();
   }
-  
+
   if(config.count("treedot")) {
     Util::writeFile(config["treedot"].as<string>(), t.dot());
   }
-        
+
   cout << "Finished!\n";
-  
+
   return 0;
 }

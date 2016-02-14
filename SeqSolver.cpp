@@ -20,7 +20,7 @@
 using namespace std;
 using boost::format;
 using boost::io::group;
-namespace po = boost::program_options; 
+namespace po = boost::program_options;
 
 po::variables_map config;
 bool debug = false;
@@ -30,22 +30,24 @@ Tree tree;
 
 
 bool parseCommandLine(int argc, char ** argv) {
-  po::options_description desc("Options"); 
-  desc.add_options() 
-       ("help,h", "Print help messages") 
+  po::options_description desc("Options");
+  desc.add_options()
+       ("help,h", "Print help messages")
        ("tree", po::value<string>(&KV::prefix)->required(), "Input serialized tree")
        ("debug,d", po::bool_switch(&debug)->default_value(false), "Debug mode (verbose)")
        ("mem", po::bool_switch(&in_memory)->default_value(false), "In memory computation")
+       ("iters", po::value<unsigned long>()->default_value(100), "Max iterations")
+
   ;
-   
+
   try {
     po::store(po::parse_command_line(argc, argv, desc), config);
-  
+
     if (config.count("help")) {
         cout << desc << endl;
         return false;
     }
-    po::notify(config);  
+    po::notify(config);
   } catch (boost::program_options::required_option e) {
     cout << "Error: " << e.what() << endl << endl;
     cout << desc << endl;
@@ -56,9 +58,9 @@ bool parseCommandLine(int argc, char ** argv) {
 
 void eliminate(int node_id) {
   struct timespec requestStart, requestEnd;
-  struct timespec requestStart2, requestEnd2;  
+  struct timespec requestStart2, requestEnd2;
   Node * node;
-    
+
   node = tree.nodes.at(node_id);
   node->allocateSystem(OLD);
 
@@ -71,11 +73,11 @@ void eliminate(int node_id) {
      // kv_read_matrix(node);
     }
   }
-  
+
   if(debug) cout << format("Eliminaing node: %d... \n") % node->getId();
 
   node->eliminate();
-  
+
   if(!in_memory) {
     KV::write_matrix(node);
 
@@ -89,10 +91,10 @@ void eliminate(int node_id) {
 
 void bs(int node_id) {
   Node * node;
-  
+
   node = tree.nodes.at(node_id);
-    
-  if(!in_memory) {  
+
+  if(!in_memory) {
     KV::read_matrix(node);
 
     if(node->getLeft() != NULL && node->getRight() != NULL) {
@@ -100,11 +102,11 @@ void bs(int node_id) {
       KV::read_matrix(node->getRight());
     }
   }
-  
+
   if(debug) cout << format("Backward substitution on node: %d... \n") % node->getId();
 
   node->bs();
-  
+
   if(!in_memory) {
     if(node->getLeft() != NULL && node->getRight() != NULL) {
       KV::write_matrix(node->getLeft());
@@ -112,18 +114,18 @@ void bs(int node_id) {
     } else {
       KV::write_matrix(node); // TODO: is it needed?
     }
-  
-    if(node->getLeft() != NULL && node->getRight() != NULL) { 
+
+    if(node->getLeft() != NULL && node->getRight() != NULL) {
       node->getLeft()->deallocateSystem();
       node->getRight()->deallocateSystem();
     }
-  
-    node->deallocateSystem();  
+
+    node->deallocateSystem();
   }
 }
 
 void phase_eliminate(Node* node) {
-  if(node->getLeft() != NULL && node->getRight() != NULL) { 
+  if(node->getLeft() != NULL && node->getRight() != NULL) {
     phase_eliminate(node->getLeft());
     phase_eliminate(node->getRight());
   }
@@ -132,28 +134,50 @@ void phase_eliminate(Node* node) {
 
 void phase_bs(Node* node) {
   bs(node->getId());
-  if(node->getLeft() != NULL && node->getRight() != NULL) { 
+  if(node->getLeft() != NULL && node->getRight() != NULL) {
     phase_bs(node->getLeft());
     phase_bs(node->getRight());
   }
 }
 
+
+
 int main(int argc, char ** argv)
-{  
-  if(!parseCommandLine(argc, argv)) 
+{
+  if(!parseCommandLine(argc, argv))
     return 1;
-  
+
   KV::init();
-  
+
   KV::read(KV::prefix, tree);
-  
+
   cout << format("Got tree of %d nodes\n") % tree.nodes.size();
-  
+
+  // init_state(tree.root);
+
+  double alfa, beta, r, p, rs_old, rs_new;
+
+  // p = r = b
+  // aggregate_r
+  // rs_old = r'*r
+  // unsigned long num_iter = config["aggregate"].as<unsigned long>();
+  // for(size_t i = 0; i < num_iter; ++i) {
+    // aggregate_and_distribute p
+    // dist: Ap = A * p
+    // dist: pAp = p'*Ap
+    // aggregate pAp
+    // alpha = rs_old / pAp
+    // distribute alpha
+    // dist: x = x + alpha * p
+    // rs_new = r'*r
+
+  // }
+
   phase_eliminate(tree.root);
   phase_bs(tree.root);
   cout << "Finished!\n";
-   
+
   KV::deinit();
-  
+
   return 0;
 }
