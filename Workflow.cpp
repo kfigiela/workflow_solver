@@ -14,15 +14,23 @@ using namespace std;
 using boost::format;
 
 std::map<int, int> workerIds;
+std::map<int, long> workerMem;
 int lastWorker = 0;
 
-int getWorkerId(int nid, int numWorkers) {
+int getWorkerId(int nid, long mem, int numWorkers) {
   try {
     return workerIds.at(nid);
   } catch (std::out_of_range e) {
-    workerIds[nid] = lastWorker;
-    lastWorker = (lastWorker + 1) % numWorkers;
-    return workerIds[nid];
+    int selected = lastWorker;
+    cout << workerMem[selected] << endl;
+    while (workerMem[selected] + mem > 4*1024*1024*1024l) {
+      cout << "Trying next machine" << endl;
+      selected = (selected + 1) % numWorkers;
+    }
+    lastWorker = (selected + 1) % numWorkers;
+    workerMem[selected] += mem;
+    workerIds[nid] = selected;
+    return selected;
   }
 }
 
@@ -169,7 +177,7 @@ void workflowElimination(Workflow* w, Node *node, unsigned long threshold, int n
 
   double size  = (node->getDofs().size() - node->getDofsToElim());
   size = size * size * sizeof(double);
-  int workerId = aggregate ? getWorkerId(node->getId(), numWorkers):0;
+  int workerId = aggregate ? getWorkerId(node->getId(), node->getSizeInMemory(aggregate), numWorkers):0;
   Process p(aggregate?"SeqEliminate":"Eliminate", node->getSizeInMemory(aggregate), size, workerId);
   if(isLeaf || aggregate) {
     Signal * elementMatrix = w->signal(str(format("%05d_element") % node->getId()));
@@ -194,7 +202,7 @@ void workflowBackwardSubstitution(Workflow* w, Node *node, unsigned long thresho
   bool isLeaf = (node->getLeft() == NULL || node->getRight() == NULL);
   bool aggregate = node->getFLOPs(true) < threshold;
 
-  int workerId = aggregate ? getWorkerId(node->getId(), numWorkers):0;
+  int workerId = aggregate ? getWorkerId(node->getId(), node->getSizeInMemory(aggregate), numWorkers):0;
   Process p(aggregate?"SeqBacksubstitute":"Backsubstitute", 0, 0, workerId);
 
   Signal * nodeMatrix = w->signal(str(format("%05d_%s") % node->getId() % (node->getParent() == NULL?"schur":"bs")));
