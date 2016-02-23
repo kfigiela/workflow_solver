@@ -62,7 +62,7 @@ void eliminate(int node_id) {
   Node * node;
 
   node = tree.nodes.at(node_id);
-  node->allocateSystem(OLD);
+  node->allocateSystem(LU);
 
   if(!in_memory) {
     if(node->getLeft() != NULL && node->getRight() != NULL) {

@@ -13,16 +13,40 @@
 using namespace std;
 using boost::format;
 
+
+typedef std::pair<int, long> MyPairType;
+struct CompareSecond
+{
+    bool operator()(const MyPairType& left, const MyPairType& right) const
+    {
+        return left.second < right.second;
+    }
+};
+
+
 std::map<int, int> workerIds;
+std::map<int, long> workerMem;
 int lastWorker = 0;
 
-int getWorkerId(int nid, int numWorkers) {
+int getWorkerId(int nid, long mem, int numWorkers) {
   try {
     return workerIds.at(nid);
   } catch (std::out_of_range e) {
-    workerIds[nid] = lastWorker;
-    lastWorker = (lastWorker + 1) % numWorkers;
-    return workerIds[nid];
+    for(int i= 0; i<numWorkers; ++i) workerMem[i];
+    int selected = lastWorker;
+
+    std::pair<int, long> min  = *min_element(workerMem.begin(), workerMem.end(), CompareSecond());
+    selected = min.first; 
+
+    cout << workerMem[selected] << endl;
+    while (workerMem[selected] + mem > 24*1024*1024*1024l) {
+      cout << "Trying next machine" << endl;
+      selected = (selected + 1) % numWorkers;
+    }
+    lastWorker = (selected + 1) % numWorkers;
+    workerMem[selected] += mem;
+    workerIds[nid] = selected;
+    return selected;
   }
 }
 
@@ -160,7 +184,7 @@ Workflow * buildWorkflow(Node * root, unsigned long threshold, int numWorkers) {
 void workflowElimination(Workflow* w, Node *node, unsigned long threshold, int numWorkers)
 {
   bool isLeaf = (node->getLeft() == NULL || node->getRight() == NULL);
-  bool aggregate = node->getFLOPs(true) < threshold;
+  bool aggregate = node->getSizeInMemory(true) < threshold;
 
   if (!isLeaf && !aggregate) {
       workflowElimination(w, node->getLeft(), threshold, numWorkers);
@@ -169,7 +193,7 @@ void workflowElimination(Workflow* w, Node *node, unsigned long threshold, int n
 
   double size  = (node->getDofs().size() - node->getDofsToElim());
   size = size * size * sizeof(double);
-  int workerId = aggregate ? getWorkerId(node->getId(), numWorkers):0;
+  int workerId = aggregate ? getWorkerId(node->getId(), node->getSizeInMemory(aggregate), numWorkers):0;
   Process p(aggregate?"SeqEliminate":"Eliminate", node->getSizeInMemory(aggregate), size, workerId);
   if(isLeaf || aggregate) {
     Signal * elementMatrix = w->signal(str(format("%05d_element") % node->getId()));
@@ -192,9 +216,9 @@ void workflowElimination(Workflow* w, Node *node, unsigned long threshold, int n
 void workflowBackwardSubstitution(Workflow* w, Node *node, unsigned long threshold, int numWorkers)
 {
   bool isLeaf = (node->getLeft() == NULL || node->getRight() == NULL);
-  bool aggregate = node->getFLOPs(true) < threshold;
+  bool aggregate = node->getSizeInMemory(true) < threshold;
 
-  int workerId = aggregate ? getWorkerId(node->getId(), numWorkers):0;
+  int workerId = aggregate ? getWorkerId(node->getId(), node->getSizeInMemory(aggregate), numWorkers):0;
   Process p(aggregate?"SeqBacksubstitute":"Backsubstitute", 0, 0, workerId);
 
   Signal * nodeMatrix = w->signal(str(format("%05d_%s") % node->getId() % (node->getParent() == NULL?"schur":"bs")));

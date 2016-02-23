@@ -137,14 +137,14 @@ void bs(int node_id, bool read = true, bool write = true, bool readChildren = tr
     } else {
       KV::write_matrix(node); // TODO: is it needed?
     }
-  }
 
-  if(node->getLeft() != NULL && node->getRight() != NULL) {
-    node->getLeft()->deallocateSystem();
-    node->getRight()->deallocateSystem();
-  }
+    if(node->getLeft() != NULL && node->getRight() != NULL) {
+      node->getLeft()->deallocateSystem();
+      node->getRight()->deallocateSystem();
+    }
 
-  node->deallocateSystem();
+    node->deallocateSystem();
+  }
 }
 
 void seq_eliminate(Node* node, bool rec = true) {
