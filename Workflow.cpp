@@ -32,14 +32,9 @@ int getWorkerId(int nid, long mem, int numWorkers) {
   try {
     return workerIds.at(nid);
   } catch (std::out_of_range e) {
-    for(int i= 0; i<numWorkers; ++i) workerMem[i];
     int selected = lastWorker;
-
-    std::pair<int, long> min  = *min_element(workerMem.begin(), workerMem.end(), CompareSecond());
-    selected = min.first; 
-
     cout << workerMem[selected] << endl;
-    while (workerMem[selected] + mem > 24*1024*1024*1024l) {
+    while (workerMem[selected] + mem > 4*1024*1024*1024l) {
       cout << "Trying next machine" << endl;
       selected = (selected + 1) % numWorkers;
     }
